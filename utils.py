@@ -6,7 +6,10 @@ import numpy as np
 
 def better_plotter(images, plot_size=(8, 4)):
     # plt.close() # Clear previous plot buffer
-    fig, axes = plt.subplots(1, len(images) + 1, figsize=plot_size)
+    if len(images) == 1:
+        fig, axes = plt.subplots(1, len(images) + 1, figsize=plot_size)
+    else:
+        fig, axes = plt.subplots(1, len(images), figsize=plot_size)
     
     plt.axis('off')  # Turn off the axis
 
@@ -19,154 +22,93 @@ def get_landmark_coords(landmarks):
     coords = np.array([(landmarks.part(n).x, landmarks.part(n).y) for n in range(0, 68)])
     return coords
 
-# def draw_face(image, faces):
-#     """
-#     Draw a bounding box on the detected face
-#     """
-#     print(faces[0])
-    
-#     image_with_face = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-#     cv2.rectangle(
-#         image_with_face, 
-#         (faces[0].left(), faces[0].top()), 
-#         (faces[0].right(), faces[0].bottom()), 
-#         (255, 0, 0), 
-#         5
-#     )
+def crop_face_with_padding(image, face, padding_ratio=1/3):
+    """
+    Crop the face from the image with additional padding. If the padding exceeds the image size,
+    the exceeded regions will be filled with black pixels.
 
-#     return image_with_face
+    Parameters:
+    - image: The source image.
+    - face: The coordinates of the face (dlib.rectangle object).
+    - padding_ratio: Ratio of face size to be used as padding (default: 1/3).
 
-# def draw_landmarks(image, landmarks):
-#     # Loop through each face detected
-#     image_landmarks = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
+    Returns:
+    Cropped image including the face with additional padding.
+    """
+    # Calculate the dimensions of the detected face
+    face_width = face.right() - face.left()
+    face_height = face.bottom() - face.top()
 
-#     for i in range(len(landmarks)):
-#         # Draw the landmarks with circles
-#         for n in range(0, 68):
-#             x = landmarks[i].part(n).x
-#             y = landmarks[i].part(n).y
-#             cv2.circle(image_landmarks, (x, y), 6, (255, 0, 0), -1)
-    
-#     return image_landmarks
+    # Calculate the padding
+    padding_width = int(face_width * padding_ratio)
+    padding_height = int(face_height * padding_ratio)
 
-# def rect_contains(rect, point):
-#     if point[0] < rect[0] or point[0] > rect[2] or point[1] < rect[1] or point[1] > rect[3]:
-#         return False
-#     return True
+    # Create a new image with padding filled with black pixels
+    new_width = face_width + 2 * padding_width
+    new_height = face_height + 2 * padding_height
+    padded_image = np.zeros((new_height, new_width, 3), dtype=np.uint8)
 
-# def get_triangles(image, landmark_points):    
-#     # Applying Delaunay triangulation
-#     rect = (0, 0, image.shape[1], image.shape[0])
-#     subdiv = cv2.Subdiv2D(rect)
-#     subdiv.insert(landmark_points)
-#     triangles = subdiv.getTriangleList()
-    
-#     print(len(landmark_points), len(triangles))
-    
-#     # Converting to int
-#     triangles = np.array(triangles, dtype=np.int32)
+    # Calculate the position to paste the cropped face in the new image
+    paste_x = max(padding_width - face.left(), 0)
+    paste_y = max(padding_height - face.top(), 0)
 
-#     return triangles, rect
+    # Adjust the coordinates for cropping, ensuring they are within the original image
+    crop_left = max(face.left() - padding_width, 0)
+    crop_top = max(face.top() - padding_height, 0)
+    crop_right = min(face.right() + padding_width, image.shape[1])
+    crop_bottom = min(face.bottom() + padding_height, image.shape[0])
 
-# def draw_triangulation(image, landmarks):
-#     image_triangulation = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-    
-#     # Collecting the facial landmark points
-#     landmark_points = []
-#     for n in range(0, 68):
-#         x = landmarks.part(n).x
-#         y = landmarks.part(n).y
-#         landmark_points.append((x, y))
-    
-#     triangles, rect = get_triangles(image_triangulation, landmark_points)
-    
-#     for t in triangles:
-#         pt1 = (t[0], t[1])
-#         pt2 = (t[2], t[3])
-#         pt3 = (t[4], t[5])
-        
-#         # Drawing the triangles
-#         if rect_contains(rect, pt1) and rect_contains(rect, pt2) and rect_contains(rect, pt3):
-#             cv2.line(image_triangulation, pt1, pt2, (0, 255, 0), 2)
-#             cv2.line(image_triangulation, pt2, pt3, (0, 255, 0), 2)
-#             cv2.line(image_triangulation, pt3, pt1, (0, 255, 0), 2)
+    # Crop the image and paste it into the padded image
+    cropped_face = image[crop_top:crop_bottom, crop_left:crop_right]
+    padded_image[paste_y:paste_y + cropped_face.shape[0], paste_x:paste_x + cropped_face.shape[1]] = cropped_face
 
-#     return image_triangulation
+    return cv2.cvtColor(padded_image, cv2.COLOR_BGR2RGB)
 
-# def extract_face(image, landmarks):
-#     image = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-#     image_triangulation = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-    
-#     # Creating a blank mask for the face
-#     face_mask = np.zeros_like(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-    
-#     # Collecting the facial landmark points
-#     landmark_points = []
-#     for n in range(0, 68):
-#         x = landmarks.part(n).x
-#         y = landmarks.part(n).y
-#         landmark_points.append((x, y))
-    
-#     triangles, rect = get_triangles(image, landmark_points)
-#     # print(len(triangles))
-    
-#     for t in triangles:
-#         pt1 = (t[0], t[1])
-#         pt2 = (t[2], t[3])
-#         pt3 = (t[4], t[5])
-#         # print(pt1, pt2, pt3)
-        
-#         # # Drawing the triangles
-#         # if rect_contains(rect, pt1) and rect_contains(rect, pt2) and rect_contains(rect, pt3):
-#         #     cv2.line(image_triangulation, pt1, pt2, (0, 255, 0), 1)
-#         #     cv2.line(image_triangulation, pt2, pt3, (0, 255, 0), 1)
-#         #     cv2.line(image_triangulation, pt3, pt1, (0, 255, 0), 1)
-        
-#         if rect_contains(rect, pt1) and rect_contains(rect, pt2) and rect_contains(rect, pt3):
-#             # Draw the triangle in the mask
-#             cv2.fillConvexPoly(face_mask, np.array([pt1, pt2, pt3], dtype=np.int32), 255)
-    
-#     # # Extracting the face pixels
-#     # extracted_face_trig = cv2.bitwise_and(image_triangulation, image_triangulation, mask=face_mask)
-#     # extracted_face_rgb_trig = cv2.cvtColor(extracted_face_trig, cv2.COLOR_BGR2RGB)
+def resize_image_to_target_height(source_img, target_img):
+    """
+    Resize the source image to have the same height as the target image,
+    while maintaining the aspect ratio of the source image.
 
-#     # Extracting the face pixels
-#     extracted_face = cv2.bitwise_and(image, image, mask=face_mask)
-#     extracted_face_rgb = cv2.cvtColor(extracted_face, cv2.COLOR_BGR2RGB)
-    
-#     # Determine the bounding rectangle of the face region
-#     x_coordinates = [point[0] for point in landmark_points]
-#     y_coordinates = [point[1] for point in landmark_points]
-#     x_min, x_max = min(x_coordinates), max(x_coordinates)
-#     y_min, y_max = min(y_coordinates), max(y_coordinates)
+    Parameters:
+    - source_img: The source image to be resized.
+    - target_img: The target image whose height is to be matched.
 
-#     # # Crop the masked image to the bounding rectangle
-#     # cropped_face_trig = extracted_face_trig[y_min:y_max, x_min:x_max]
-#     # cropped_face_rgb_trig = cv2.cvtColor(cropped_face_trig, cv2.COLOR_BGR2RGB)
-    
-#     # Crop the masked image to the bounding rectangle
-#     cropped_face = extracted_face[y_min:y_max, x_min:x_max]
-#     cropped_face_rgb = cv2.cvtColor(cropped_face, cv2.COLOR_BGR2RGB)
-    
-#     # Adjusting the triangle coordinates to the cropped image's origin
-#     adjusted_triangles = []
-#     for t in triangles:
-#         pt1 = (t[0] - x_min, t[1] - y_min)
-#         pt2 = (t[2] - x_min, t[3] - y_min)
-#         pt3 = (t[4] - x_min, t[5] - y_min)
-    
-#         if rect_contains((0, 0, cropped_face.shape[1], cropped_face.shape[0]), pt1) and \
-#            rect_contains((0, 0, cropped_face.shape[1], cropped_face.shape[0]), pt2) and \
-#            rect_contains((0, 0, cropped_face.shape[1], cropped_face.shape[0]), pt3):
-#             adjusted_triangles.append([pt1, pt2, pt3])
+    Returns:
+    Resized source image.
+    """
+    # Calculate the aspect ratio of the source image
+    aspect_ratio = source_img.shape[1] / source_img.shape[0]
 
-#     cropped_face_with_trig = cropped_face_rgb.copy()
-    
-#     # Optional: Draw the adjusted triangles on the cropped image for visualization
-#     for t in adjusted_triangles:
-#         cv2.line(cropped_face_with_trig, t[0], t[1], (0, 255, 0), 1)
-#         cv2.line(cropped_face_with_trig, t[1], t[2], (0, 255, 0), 1)
-#         cv2.line(cropped_face_with_trig, t[2], t[0], (0, 255, 0), 1)
+    # Calculate the new width to maintain the aspect ratio
+    new_height = target_img.shape[0]
+    new_width = int(new_height * aspect_ratio)
 
-#     return cropped_face_rgb, cropped_face_with_trig, adjusted_triangles
-    
+    # Check if the source image is larger than the target image
+    if source_img.shape[0] > target_img.shape[0] or source_img.shape[1] > target_img.shape[1]:
+        # Use Gaussian blurring before resizing to avoid aliasing
+        source_img = cv2.GaussianBlur(source_img, (5, 5), 0)
+
+    # Resize the image
+    resized_source_img = cv2.resize(source_img, (new_width, new_height))
+
+    return resized_source_img
+
+def concat_images(img1, img2):
+    """
+    Concatenate two images horizontally.
+
+    Parameters:
+    - img1: First image.
+    - img2: Second image.
+
+    Returns:
+    Concatenated image.
+    """
+    # Check if the heights of the two images are the same
+    if img1.shape[0] != img2.shape[0]:
+        raise ValueError("The heights of both images must be the same.")
+
+    # Concatenate the images horizontally
+    concatenated_img = np.hstack((img1, img2))
+
+    return concatenated_img
