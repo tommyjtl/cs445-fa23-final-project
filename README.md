@@ -42,7 +42,11 @@ To run the notebook, launch your Jupyter Notebook and open `notebook.ipynb`.
 
 ```shell
 # Usage: manual_cat_extraction.py [-h] [--json_path JSON_PATH] image_path
-# Example:
+
+# Load a cat image from `image_path`
+python3.10 manual_cat_extraction.py images/pexels-photo-736532.jpeg
+
+# Load a cat image from `image_path` and load the already-exists landmarks from `json_path`
 python3.10 manual_cat_extraction.py images/pexels-photo-736532.jpeg --json_path landmarks/pexels-photo-736532.json
 ```
 
