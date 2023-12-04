@@ -56,6 +56,7 @@ python3.10 manual_cat_extraction.py images/pexels-photo-736532.jpeg --json_path 
 - Use `mouse right click` to move adjust of point to a new location
   - everytime you update the list, the program update the point you are currently adjusting; and update the `points.json`
 - Press `q` to quit
+- Use [this picture](https://www.researchgate.net/publication/343699139/figure/fig2/AS:933733284724738@1599630771707/dentification-of-facial-landmarks-using-Dlib-a-Facial-landmarks-b-The-position-and.jpg) as a reference for the 68 landmarks
 
 ## To-do
 
