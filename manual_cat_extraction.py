@@ -68,15 +68,29 @@ if args.json_path:
 cv2.namedWindow("Image")
 cv2.setMouseCallback("Image", mouse_event)
 
+# Create a window and set the mouse callback function
+cv2.namedWindow("Reference")
+img_ref = cv2.imread("images/343699139.png")
+
 while True:
     img_copy = img.copy()
+    shortest_side = min(img_copy.shape[:2])
+    # print(shortest_side * 5e-3)
+    circle_radius = int(shortest_side * 4e-3)
+    font_size = shortest_side * 4e-4
+    font_weight = int(shortest_side * 1e-3)
+    # print(circle_radius, font_size, font_weight)
+    
     for i, point in enumerate(points):
-        cv2.circle(img_copy, point, 8, (0, 0, 255), -1)
+        cv2.circle(img_copy, point, circle_radius, (0, 0, 255), -1)
         cv2.putText(
             img_copy,
             str(i+1),
-            (point[0]+5, point[1]+15), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            (point[0], point[1]+15), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), font_weight)
+    
+    cv2.imshow("Reference", img_ref)    
     cv2.imshow("Image", img_copy)
+    
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord("q"):  # Escape key
