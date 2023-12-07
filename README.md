@@ -58,11 +58,6 @@ python3.10 manual_cat_extraction.py images/pexels-photo-736532.jpeg --json_path 
 - Press `q` to quit
 - Use [this picture](https://www.researchgate.net/publication/343699139/figure/fig2/AS:933733284724738@1599630771707/dentification-of-facial-landmarks-using-Dlib-a-Facial-landmarks-b-The-position-and.jpg) as a reference for the 68 landmarks
 
-## To-do
-
-- [ ] Style transfer
-- [ ] Collec more images
-
 ## Reference
 
 - [`dlib`'s demo code for using 68 landmarks predictor](http://dlib.net/face_landmark_detection.py.html)
