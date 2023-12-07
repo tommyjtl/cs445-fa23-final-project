@@ -70,7 +70,7 @@ cv2.setMouseCallback("Image", mouse_event)
 
 # Create a window and set the mouse callback function
 cv2.namedWindow("Reference")
-img_ref = cv2.imread("images/343699139.png")
+img_ref = cv2.imread("docs/343699139.png")
 
 while True:
     img_copy = img.copy()
